@@ -69,7 +69,7 @@ Acceptance criteria:
 
 ### 4.2 Ingestion
 
-**FR-2.** SEC EDGAR ingestion via the companyfacts API: latest annual (10-K) plus last 2 quarters (10-Q). Extracts: revenue, margins, FCF, cash, debt, D/E, retained earnings; risk-factors section; MD&A summary.
+**FR-2.** SEC EDGAR ingestion: latest annual (10-K) plus last 2 quarters (10-Q). Numbers via the companyfacts API (revenue, margins, FCF, cash, debt, D/E, retained earnings); section text from filing HTML via EDGAR archives — **10-K Items 1A (Risk Factors), 7 (MD&A), 8 (Financial Statements); 10-Q Part I Items 1 (Financial Statements) and 2 (MD&A), Part II Item 1A (Risk Factors)**.
 - FR-2a. Filings cached locally; never re-fetch within the cache window.
 - FR-2b. Fixture-based tests assert section extraction against known filings.
 
@@ -237,7 +237,7 @@ Acceptance criteria:
 - Deduplication and recency-weighting on synthetic narrative sets.
 
 ### 7.2 Pipeline tests (key stages)
-- EDGAR section extraction against committed fixtures.
+- EDGAR section extraction against committed fixtures: asserts the exact sections in FR-2 parse cleanly (10-K Items 1A/7/8; 10-Q Part I Items 1–2, Part II Item 1A) and extracted numbers reconcile with companyfacts values within tolerance.
 - Transcript-missing degradation: gap disclosed, never hidden.
 - Quality agent vs. private 17-name labeled set — accuracy threshold (exceptional high, rejects low).
 - Valuation agent vs. private hand-checked IV sheet — tolerance-based.
@@ -250,6 +250,16 @@ Acceptance criteria:
 - **Hype-resistance:** loud commentary bullishness, weak filings → sentiment downweighted and labeled, never parroted.
 - **Citation integrity:** 100% of factual claims resolve to real source passages.
 - **Decision-box completeness:** all six fields present on every memo.
+
+### Eval quality rubric (dimensions every release must pass)
+
+The e2e cases above test outcomes; this rubric defines what "green" means for memo quality. Three dimensions, each with a measurement:
+
+- **Groundedness** (nothing unbacked): automated check — 100% of factual claims resolve to a real source passage; sampled citation precision ≥ 95% (claim text entailed by the cited passage), scored by a pinned judge model + human spot audit on release candidates. Failing either blocks release.
+- **Accuracy** (the machinery is right): factor-agent outputs vs. private labeled oracles — quality agent meets the agreed accuracy threshold on the private 17-name set; valuation agent reproduces the hand-checked IV sheet within tolerance; financial-health pass/fails recomputed deterministically from filings with zero tolerance for mismatch.
+- **Relevancy** (the memo serves the decision): judge-model rubric — after reading, can the reader size a position and name a concrete invalidation trigger (target ≥ 4/5)? Every factor card must carry at least one evidence item that bears on the decision box. Generic market commentary or filler sections fail the memo.
+
+**Eval dependencies (release blockers, not nice-to-haves):** the eval suite cannot be "green" without (a) the private labeled sets existing and versioned, (b) frozen `--asof` fixtures for the regression cases, and (c) a pinned judge model + prompt version for the LLM-graded dimensions. These are prerequisites of the first release gate, owned by the eval-harness ticket.
 
 ### 7.4 Release gates (v1 is done when)
 - [ ] `research AAPL --asof 2026-10-01` → `memo.md` + `memo.json`; all claims cited; decision box complete; cost under budget.
