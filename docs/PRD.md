@@ -73,8 +73,10 @@ Acceptance criteria:
 - FR-2a. Filings cached locally; never re-fetch within the cache window.
 - FR-2b. Fixture-based tests assert section extraction against known filings.
 
-**FR-3.** Earnings transcripts: latest 2 quarters. Source TBD (open question §9) — the ingester must abstract the source behind an interface so the provider can swap.
-- FR-3a. Missing transcripts degrade gracefully: the memo proceeds with the gap disclosed in `memo.md` ("No transcript available for Q2 2026"), never hidden.
+**FR-3.** Earnings transcripts: latest 2 quarters, sourced from Alpha Vantage `EARNINGS_CALL_TRANSCRIPT` (free tier, 25 req/day — verified live). The ingester abstracts the source behind an interface so the provider can swap later.
+- FR-3a. Missing transcripts (or a transcript not yet available — post-call latency is unverified, ~1 day) degrade gracefully: the memo proceeds with the gap disclosed in `memo.md` ("No transcript available for Q2 2026"), never hidden.
+- FR-3b. Quarter parameter is fiscal (`YYYYQM`); non-calendar-FY names (e.g., AAPL) require a fiscal-to-calendar quarter mapping.
+- FR-3c. No paid fallback in v1: the chain is cache → Alpha Vantage → EDGAR 8-K disclosure.
 
 **FR-4.** Market data: price history, 200DMA, 52-week high/low. No real-time intraday data in v1.
 
@@ -265,7 +267,7 @@ Web UI and the 7 end-user screens; portfolio risk view; watchlist alerts; monito
 
 ## 9. Open questions
 
-1. Earnings-transcript source (free vs. paid API).
+1. ~~Earnings-transcript source (free vs. paid API).~~ — **Decided 2026-10-13:** Alpha Vantage free tier (`EARNINGS_CALL_TRANSCRIPT`, verified live), no paid fallback; chain = cache → Alpha Vantage → EDGAR 8-K disclosure.
 2. LLM provider/model (config-driven; start with one).
 3. Exact per-memo $ budget (default TBD).
 4. Which 3 tickers anchor the demo + eval baseline.
